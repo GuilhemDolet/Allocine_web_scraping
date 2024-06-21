@@ -38,10 +38,15 @@ class MoviespiderSpider(scrapy.Spider):
         if press_score:
             item['press_score']= press_score
         else:
-            item['press_score'] = "Non disponible"
+            item['press_score'] = None
 
         # Gestion des valeurs manquantes:
-        item['public_score'] = response.xpath("//span[@class='stareval-note']/text()")[1].get()
+        public_score = response.xpath("//span[@class='stareval-note']/text()").getall()
+        if public_score:
+            item['public_score'] = public_score[1]
+        else:
+            item['public_score'] = None
+
         # y'a des Nones qui traine = OK = Géré avec le 'or' à la fin de la ligne
         item['mention'] = response.xpath("//section[@class='section ovw ovw-synopsis']/div[@class='certificate']/span[@class='certificate-text']/text()").get() or "Non disponible"
         # des retour à la lignes à nettoyer = OK = Géré avec le pipeline

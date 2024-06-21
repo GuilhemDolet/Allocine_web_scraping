@@ -24,27 +24,42 @@ class AllocineMovieScrapperPipeline:
     def clean_time(self, item):
         adapter = ItemAdapter(item)
         time = adapter.get('time')
-        match_or_not = re.search(r'\n?(.*)\n?', time)
-        if match_or_not:
-            adapter['time'] = match_or_not.group(1)
-        else:
+        if time:
+            match_or_not = re.search(r'\n?(.*)\n?', time)
+            if match_or_not:
+                adapter['time'] = match_or_not.group(1)
+            else:
+                adapter['time'] = None
+        else: 
             adapter['time'] = None
+            
         return item
     
     def clean_actors(self, item):
         adapter = ItemAdapter(item)
         actors = adapter.get('actors', [])
-        actors.pop(0)
-        if len(actors) > 1 :
-            adapter['actors'] = ', '.join(actors)
+        if len(actors) > 0 :
+            actors.pop(0)
+            if len(actors) > 1 :
+                adapter['actors'] = ', '.join(actors)
+            else:
+                adapter['actors'] = actors[0]
         else:
-            adapter['actors'] = actors[0]
+            adapter['actors'] = None
+
         return item
 
     def clean_language(self, item):
         adapter = ItemAdapter(item)
         language = adapter.get('language')
-        adapter['language'] = (re.search(r'\n(\w+)', language).group(1))
+        if language:
+            match = re.search(r'\n(\w+)', language)
+            if match:
+                adapter['language'] = match.group(1)
+            else:
+                adapter['language'] = None
+        else:
+            adapter['language'] = None
         return item
     
     def clean_years(self, item):
@@ -141,6 +156,7 @@ class AllocineSerieScrapperPipeline(AllocineMovieScrapperPipeline):
         return item
         
     def clean_title(self, item):
+
         adapter = ItemAdapter(item)
         title = adapter.get('title')
         if title:
@@ -148,6 +164,7 @@ class AllocineSerieScrapperPipeline(AllocineMovieScrapperPipeline):
         else:
             adapter['title'] = None
         return item
+    
     def clean_annee_de_diffusion(self, item):
         adapter = ItemAdapter(item)
         annee = adapter.get('année_de_diffusion')

@@ -65,8 +65,8 @@ DEFAULT_REQUEST_HEADERS = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-#    "imdbscrapper.pipelines.AllocineMovieScrapperPipeline": 300,
-   "imdbscrapper.pipelines.AllocineSerieScrapperPipeline": 300,
+   "imdbscrapper.pipelines.AllocineMovieScrapperPipeline": 300,
+   # "imdbscrapper.pipelines.AllocineSerieScrapperPipeline": 300,
    
 }
 
