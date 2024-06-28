@@ -29,9 +29,9 @@ class AllocineMovieScrapperPipeline:
             if match_or_not:
                 adapter['time'] = match_or_not.group(1)
             else:
-                adapter['time'] = None
+                adapter['time'] = "Non disponible"
         else: 
-            adapter['time'] = None
+            adapter['time'] = "Non disponible"
             
         return item
     
@@ -45,7 +45,7 @@ class AllocineMovieScrapperPipeline:
             else:
                 adapter['actors'] = actors[0]
         else:
-            adapter['actors'] = None
+            adapter['actors'] = "Non disponible"
 
         return item
 
@@ -57,9 +57,9 @@ class AllocineMovieScrapperPipeline:
             if match:
                 adapter['language'] = match.group(1)
             else:
-                adapter['language'] = None
+                adapter['language'] = "Non disponible"
         else:
-            adapter['language'] = None
+            adapter['language'] = "Non disponible"
         return item
     
     def clean_years(self, item):
@@ -72,7 +72,7 @@ class AllocineMovieScrapperPipeline:
             else:
                 years_cleaned = None
         else: 
-            years_cleaned = "pas de valeur"
+            years_cleaned = "Non disponible"
 
         return item
     
@@ -101,6 +101,8 @@ class AllocineMovieScrapperPipeline:
 
         if len(genre) > 1 :
             adapter['genre'] = ', '.join(genre)
+        elif len(genre) == 0:
+            adapter['genre'] = 'Non disponible'
         else:
             adapter['genre'] = genre[0]
 
@@ -121,23 +123,25 @@ class AllocineMovieScrapperPipeline:
     def clean_press_score(self, item):
         adapter = ItemAdapter(item)
         press_score = adapter.get('press_score')
-        if press_score:
+        if press_score == "Non disponible":
+            adapter['press_score'] = "Non disponible"
+        else :
             press_score = press_score.replace(',', '.')
             int_press_score = float(press_score)
             adapter['press_score'] = int_press_score
-        else:
-            adapter['press_score'] = None
         return item
     
     def clean_public_score(self, item):
         adapter = ItemAdapter(item)
         public_score = adapter.get('public_score')
-        if public_score:
+
+        if public_score == "Non disponible":
+            adapter['public_score'] = "Non disponible"
+        else:
             public_score = public_score.replace(',', '.')
             int_public_score = float(public_score)
             adapter['public_score'] = int_public_score
-        else:
-            adapter['public_score'] = None
+            
         return item
 
 class AllocineSerieScrapperPipeline(AllocineMovieScrapperPipeline):
