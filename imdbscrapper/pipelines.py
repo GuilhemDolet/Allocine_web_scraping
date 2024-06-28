@@ -114,6 +114,8 @@ class AllocineMovieScrapperPipeline:
 
         if len(genre) > 1 :
             adapter['country'] = ', '.join(genre)
+        elif len(genre) == 0:
+            adapter['country'] = "Non disponible"
         else:
             adapter['country'] = genre[0]
 
