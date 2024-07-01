@@ -7,41 +7,17 @@ from db import engine
 Base = declarative_base() #créer une class "Base" (modèle)
 
 # SET UP des tables d'associations pour les relations many to many:
-movies_genre_association = Table('le_genre_des_films',
-                                Base.metadata,
-                                Column('movie_id', Integer, ForeignKey('movies.movie_id')),
-                                Column('name_genre'), String, ForeignKey('genre.name_genre'),
-                                UniqueConstraint('movie_id', 'genre_id'))
-movies_countries_association = Table('la_nationalité_des_films',
-                                     Base.metadata,
-                                     Column('movie_id', Integer, ForeignKey('movies.movie_id')),
-                                     Column('country_name', String, ForeignKey('countries.country_name')),
-                                     UniqueConstraint('movie_id', 'country_name'))
+
 movies_people_association = Table('les_acteurs_et_realisateur_du_film',
                                      Base.metadata,
                                      Column('movie_id', Integer, ForeignKey('movies.movie_id')),
-                                     Column('people_id', String, ForeignKey('people.people.id')),
+                                     Column('people_id', String, ForeignKey('people.people_id')),
                                      UniqueConstraint('movie_id', 'people_id'))
-# movies_realisator_association = Table('les_realisateurs_du_film',
-#                                      Base.metadata,
-#                                      Column('movie_id', Integer, ForeignKey('movies.movie_id')),
-#                                      Column('people_id', String, ForeignKey('people.people_id')),
-#                                      UniqueConstraint('movie_id', 'people_id'))
 
-series_genre_association = Table('le_genre_des_series',
-                                 Base.metadata,
-                                 Column('series_id'), Integer, ForeignKey('series.serie_id'),
-                                 Column('name_genre'), String, ForeignKey('genre.name_genre'),
-                                 UniqueConstraint('series_id', 'name_genre'))
-series_countries_association = Table('la_nationalité_des_series',
-                                     Base.metadata,
-                                     Column('serie_id', Integer, ForeignKey('series.serie_id')),
-                                     Column('country_name', String, ForeignKey('countries.country_name')),
-                                     UniqueConstraint('serie_id', 'country_name'))
 series_people_association = Table('les_acteurs_et_realisateur_de_la_serie',
                                      Base.metadata,
                                      Column('serie_id', Integer, ForeignKey('series.serie_id')),
-                                     Column('people_id', String, ForeignKey('people.people.id')),
+                                     Column('people_id', String, ForeignKey('people.people_id')),
                                      UniqueConstraint('serie_id', 'people_id'))
 
 
@@ -57,9 +33,7 @@ class Movie(Base):
     duration = Column(String)
     description = Column(String)
 
-    # lien avec entre les tables
-    genre = relationship('Genre', secondary=movies_genre_association, back_populates='movies')
-    countries = relationship('Countries', secondary=movies_countries_association, back_populates='movies')
+    # lien avec la table People
     people = relationship('People', secondary=movies_people_association, back_populates="movies")
 
     def __repr__(self):
@@ -68,7 +42,7 @@ class Movie(Base):
 class Serie(Base):
 
     __tablename__ = 'series'
-    serie_id = Column(Integer, utoincrement=True, primary_key=True)
+    serie_id = Column(Integer, autoincrement=True, primary_key=True)
     title = Column(String)
     date = Column(String)
     status = Column(String)
@@ -80,8 +54,6 @@ class Serie(Base):
     duration = Column(String)
     description = Column(String)
 
-    genre = relationship('Genre', secondary=series_genre_association, back_populates='series')
-    countries = relationship('Countries', secondary=series_countries_association, back_populates='series')
     people = relationship('People', secondary=series_people_association, back_populates='series')
 
     def __repr__(self):
@@ -95,24 +67,53 @@ class People(Base):
     movie = relationship('Movie', secondary=movies_people_association, back_populates='people')
     serie = relationship('Serie', secondary=series_people_association, back_populates='people')
 
-class Genre(Base):
+class GenreByMovie(Base):
 
-    __tablename__ = "genre"
-    name_genre = Column(String, primary_key=True, index=True)
+    __tablename__ = "genre_by_movie"
+    name_genre = Column(String, index=True)
+    movie_id = Column(Integer, ForeignKey('movies.movie_id'))
+    movie = relationship('Movie', backref="genre_by_movie")
     
-    movies = relationship('Movie', secondary=movies_genre_association, back_populates='genre')
-    series = relationship('Serie', secondary=movies_genre_association, back_populates='genre')
+    __table_args__ = (
+        PrimaryKeyConstraint('name_genre','movie_id'),
+    )
 
     def __repr__(self):
         return f"Genre : {self.name_genre}"
     
-class Countries(Base):
-    __tablename__ = "countries"
-    country_name = Column(String, primary_key=True, index=True)
+class GenreBySerie(Base):
 
-    movies = relationship('Movie', secondary=movies_countries_association, back_populates="countries")
-    series = relationship('Serie', secondary=series_countries_association, back_populates="countries")
+    __tablename__ = "genre_by_serie"
+    name_genre = Column(String, index=True)
+    serie_id = Column(Integer, ForeignKey('series.serie_id'))
+    serie = relationship('Serie', backref="genre_by_serie")
+    
+    __table_args__ = (
+        PrimaryKeyConstraint('name_genre','serie_id'),
+    )
 
+    def __repr__(self):
+        return f"Genre : {self.name_genre}"
+    
+class CountryByMovie(Base):
+    __tablename__ = "country_by_movie"
+    country_name = Column(String, index=True)
+    movie_id = Column(Integer, ForeignKey('movies.movie_id'))
+    movie = relationship("Movie", backref="country_by_movie")
+
+    __table_args__ = (
+        PrimaryKeyConstraint('country_name', 'movie_id'),
+    )
+
+class CountryBySerie(Base):
+    __tablename__ = "country_by_serie"
+    country_name = Column(String, index=True)
+    serie_id = Column(Integer, ForeignKey('series.serie_id'))
+    serie = relationship("Serie", backref="country_by_serie")
+    
+    __table_args__ = (
+        PrimaryKeyConstraint('country_name', 'serie_id'),
+    )
 
 if __name__ == "__main__":
     # Configuration de la base de données
