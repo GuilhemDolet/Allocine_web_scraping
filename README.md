@@ -1,2 +1,6 @@
 - Scrapping des meilleurs films sur Allociné (300 films) => OK
-- Scrapping des meilleurs series sur Allociné (
+- Scrapping des meilleurs series sur Allociné (290 series) => OK
+- Import en fichier CSV => OK
+- Création de la BDD (SQLITE3) avec des models SQLAlchemy + Schéma MERMAID
+- Les imports des items scrappy fonctionne sur les tables Movie, GenreByMovie, CountryByMovie
+- Beaucoup de difficulté à gérer l'écriture dans les tables d'association (entre Movie/Serie et People) - Actuellement ça ne fonctionne toujours pas.
