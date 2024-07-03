@@ -7,6 +7,11 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 import re
+from sqlalchemy.orm import sessionmaker
+from bdd_sqlalchemy.config import DATABASE_URL 
+from bdd_sqlalchemy.models import Base, Movie, People, Table, GenreByMovie, CountryByMovie
+
+from sqlalchemy import create_engine
 
 class AllocineMovieScrapperPipeline:
     def process_item(self, item, spider):
@@ -15,8 +20,8 @@ class AllocineMovieScrapperPipeline:
         item = self.clean_language(item)
         item = self.clean_years(item)
         item = self.clean_realisator(item)
-        item = self.clean_genre(item)
-        item = self.clean_country(item)
+        # item = self.clean_genre(item)
+        # item = self.clean_country(item)
         item = self.clean_press_score(item)
         item = self.clean_public_score(item)
         return item
@@ -40,12 +45,9 @@ class AllocineMovieScrapperPipeline:
         actors = adapter.get('actors', [])
         if len(actors) > 0 :
             actors.pop(0)
-            if len(actors) > 1 :
-                adapter['actors'] = ', '.join(actors)
-            else:
-                adapter['actors'] = actors[0]
+            adapter['actors'] = actors
         else:
-            adapter['actors'] = "Non disponible"
+            adapter['actors'] = actors #supossement une liste vide
 
         return item
 
@@ -95,7 +97,7 @@ class AllocineMovieScrapperPipeline:
         adapter['realisator'] = realisator_cleaned
         return item
     
-    def clean_genre(self, item):
+    # def clean_genre(self, item):
         adapter = ItemAdapter(item)
         genre = adapter.get('genre')
 
@@ -108,7 +110,7 @@ class AllocineMovieScrapperPipeline:
 
         return item
     
-    def clean_country(self, item):
+    # def clean_country(self, item):
         adapter = ItemAdapter(item)
         genre = adapter.get('country')
 
@@ -209,6 +211,72 @@ class AllocineSerieScrapperPipeline(AllocineMovieScrapperPipeline):
         else:
             adapter['title'] = None
         return item
-# if "__main__" == __name__:
-#     objet = ImdbscrapperPipeline()
-#     objet.clean_mention(item)
+
+
+class DatabasePipeline:
+  
+    def __init__(self):
+        # initialise une session SQLAlchemy
+        engine = create_engine(DATABASE_URL, echo = True)
+        Base.metadata.create_all(engine)
+        self.Session = sessionmaker(bind=engine) # Fabrique de session. Toujours besoin de l'instancier plus tard
+
+    def process_item(self, item, spider):
+        # Créer une instance de Movie
+        session = self.Session()
+        self.load_movie_table(item, session, spider)
+        return item
+
+    def load_movie_table(self, item, session, spider):
+        # Check pour éviter les doublons:
+        movie = session.query(Movie).filter_by(title = item.get('title')).first()
+        if movie is None:
+            movie = Movie(
+                title = item.get('title'),
+                press_score = item.get('press_score'),
+                public_score = item.get('public_score'),
+                duration = item.get('time'),
+                language = item.get('language'),
+                date = item.get('years'),
+                description = item.get('description')
+            )
+            session.add(movie)
+            session.flush() #Flush pour pouvoir récupérer le movie_id 
+
+        # Ajout des données vers la table Genre_by_movies
+        for genre in item.get('genre', []):
+            genre_by_movie_id = session.query(GenreByMovie).filter_by(name_genre=genre, movie_id=movie.movie_id).first()
+            if genre_by_movie_id is None:
+                nouvelle_ligne = GenreByMovie(name_genre=genre, movie_id=movie.movie_id)
+                session.add(nouvelle_ligne)
+                session.flush() 
+        
+        # Ajout des données vers la table Country_by_movies
+        for country in item.get('country', []):
+            country_by_movie_id = session.query(CountryByMovie).filter_by(country_name=country, movie_id=movie.movie_id).first()
+            if country_by_movie_id is None:
+                nouvelle_ligne = CountryByMovie(country_name=country, movie_id=movie.movie_id)
+                session.add(nouvelle_ligne)
+                session.flush() 
+        #------------ MANY TO MANY -------------------------------#
+        # # Lien avec la table People.
+        # for actor in item.get('actors', []):
+        #     people_actor = session.query(People).filter_by(people_name = actor).first()
+        #     if people_actor is None:
+        #         une_ligne_de_ma_table_people = People(people_name=actor)
+        #         session.add(une_ligne_de_ma_table_people)
+        #         session.flush() # Cela force l'exécution immédiate de l'INSERT SQL pour la nouvelle personne, assurant ainsi que l'ID de la nouvelle personne est disponible.
+
+        #     if people_actor and people_actor not in movie.people:
+        #         movie.people.append(people_actor) # Cela établit la relation many-to-many entre le film et la personne en ajoutant une entrée dans la table d'association movies_people_association.
+        # ---------------------------------------------------------#
+        try:
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+        return item
+    
