@@ -9,7 +9,7 @@ from itemadapter import ItemAdapter
 import re
 from sqlalchemy.orm import sessionmaker
 from bdd_sqlalchemy.config import DATABASE_URL 
-from bdd_sqlalchemy.models import Base, Movie, People, Table, GenreByMovie, CountryByMovie
+from bdd_sqlalchemy.models import Base, Movie, People, Table, GenreByMovie, CountryByMovie, ActorsByMovie
 
 from sqlalchemy import create_engine
 
@@ -258,20 +258,27 @@ class DatabasePipeline:
                 nouvelle_ligne = CountryByMovie(country_name=country, movie_id=movie.movie_id)
                 session.add(nouvelle_ligne)
                 session.flush()
+                
+        # (relation MANY TO MANY)
+        # Ajout des données vers la table People (acteurs) + vers la table d'association ActorsByMovie
+        for actor in item.get('actors', []):
+            if_exist = session.query(People).filter_by(people_name=actor).first()
+            if if_exist is None:
+                une_ligne_de_ma_table_people = People(people_name=actor)
+                session.add(une_ligne_de_ma_table_people)
+                session.flush()
+                # je récupère le people_ID de l'acteur pour l'ajouter à ma table d'association
+                actor_id = une_ligne_de_ma_table_people.people_id
+            else:
+                actor_id = if_exist.people_id
 
-        
-        #------------ MANY TO MANY -------------------------------#
-        # # Lien avec la table People.
-        # for actor in item.get('actors', []):
-        #     people_actor = session.query(People).filter_by(people_name = actor).first()
-        #     if people_actor is None:
-        #         une_ligne_de_ma_table_people = People(people_name=actor)
-        #         session.add(une_ligne_de_ma_table_people)
-        #         session.flush() # Cela force l'exécution immédiate de l'INSERT SQL pour la nouvelle personne, assurant ainsi que l'ID de la nouvelle personne est disponible.
+            # Je récupère l'ID du film pour l'ajouter à ma table d'association
+            var_movie_id = movie.movie_id
 
-        #     if people_actor and people_actor not in movie.people:
-        #         movie.people.append(people_actor) # Cela établit la relation many-to-many entre le film et la personne en ajoutant une entrée dans la table d'association movies_people_association.
-        # ---------------------------------------------------------#
+            association_actors_by_movie = ActorsByMovie(people_id=actor_id, movie_id=var_movie_id)
+            session.add(association_actors_by_movie)
+            session.flush()
+       
         try:
             session.commit()
         except:
