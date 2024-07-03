@@ -1,4 +1,5 @@
+*.csv
+*.log
+allocine_scrapping.db
 
-scrapy.log
-test.py
 

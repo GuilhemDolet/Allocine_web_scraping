@@ -243,7 +243,7 @@ class DatabasePipeline:
             session.add(movie)
             session.flush() #Flush pour pouvoir récupérer le movie_id 
 
-        # Ajout des données vers la table Genre_by_movies
+        # Ajout des données vers la table Genre_by_movies (relation ONE TO MANY)
         for genre in item.get('genre', []):
             genre_by_movie_id = session.query(GenreByMovie).filter_by(name_genre=genre, movie_id=movie.movie_id).first()
             if genre_by_movie_id is None:
@@ -251,13 +251,15 @@ class DatabasePipeline:
                 session.add(nouvelle_ligne)
                 session.flush() 
         
-        # Ajout des données vers la table Country_by_movies
+        # Ajout des données vers la table Country_by_movies (relation ONE TO MANY)
         for country in item.get('country', []):
             country_by_movie_id = session.query(CountryByMovie).filter_by(country_name=country, movie_id=movie.movie_id).first()
             if country_by_movie_id is None:
                 nouvelle_ligne = CountryByMovie(country_name=country, movie_id=movie.movie_id)
                 session.add(nouvelle_ligne)
-                session.flush() 
+                session.flush()
+
+        
         #------------ MANY TO MANY -------------------------------#
         # # Lien avec la table People.
         # for actor in item.get('actors', []):
