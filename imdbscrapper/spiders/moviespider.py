@@ -12,7 +12,7 @@ class MoviespiderSpider(scrapy.Spider):
 
         # yield scrapy.Request(url="https://www.allocine.fr/film/meilleurs/", callback=self.parse)
 
-        start_urls = [f"https://www.allocine.fr/film/meilleurs/?page={i}" for i in range(1, 31)]
+        start_urls = [f"https://www.allocine.fr/film/meilleurs/?page={i}" for i in range(1, 2)]
         for url in start_urls:
             yield  scrapy.Request(url=url, callback=self.parse, errback=self.error_callback)
     
