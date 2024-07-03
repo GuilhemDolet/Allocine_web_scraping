@@ -3,4 +3,4 @@
 - Import en fichier CSV => OK
 - Création de la BDD (SQLITE3) avec des models SQLAlchemy + Schéma MERMAID
 - Les imports des items scrappy fonctionne sur les tables Movie, GenreByMovie, CountryByMovie
-- Beaucoup de difficulté à gérer l'écriture dans les tables d'association (entre Movie/Serie et People) - Actuellement ça ne fonctionne toujours pas.
+- Première table d'association fonctionnelle entre Movie et People (ActorsByMovie). L'import dans la base de donnée fonctionne, et la corrélation entre ID movie et ID people fonctionne aussi
