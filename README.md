@@ -6,3 +6,4 @@
 - Première table d'association fonctionnelle entre Movie et People (ActorsByMovie). L'import dans la base de donnée fonctionne, et la corrélation entre ID movie et ID people fonctionne aussi
 - Ok pour toutes les tables concernées par les items movie
 - Factorisation du pipeline database (load_movie_table).
+- Connexion avec un serveur Azure et une BDD postgre OK + import des données OK
