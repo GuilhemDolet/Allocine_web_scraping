@@ -253,10 +253,10 @@ class DatabasePipeline:
 
         # (relation MANY TO MANY)
         # Ajout des données vers la table People (acteurs) + vers la table d'association ActorsByMovie
-        self.many_to_many_relation(item, session, 'actors', RealisatorByMovie, movie)
+        self.many_to_many_relation(item, session, 'realisator', RealisatorByMovie, movie)
    
         #Ajout des données vers la table People (realisator) + vers la table d'association RealisatorByMovie
-        self.many_to_many_relation(item, session, 'realisator', ActorsByMovie, movie)
+        self.many_to_many_relation(item, session, 'actors', ActorsByMovie, movie)
      
         try:
             session.commit()
