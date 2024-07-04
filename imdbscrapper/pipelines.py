@@ -9,7 +9,7 @@ from itemadapter import ItemAdapter
 import re
 from sqlalchemy.orm import sessionmaker
 from bdd_sqlalchemy.config import DATABASE_URL 
-from bdd_sqlalchemy.models import Base, Movie, People, Table, GenreByMovie, CountryByMovie, ActorsByMovie
+from bdd_sqlalchemy.models import Base, Movie, People, Table, GenreByMovie, CountryByMovie, ActorsByMovie, RealisatorByMovie
 
 from sqlalchemy import create_engine
 
@@ -93,8 +93,8 @@ class AllocineMovieScrapperPipeline:
             elif start and not stop:
                 liste_tampon.append(element)
         
-        realisator_cleaned = ', '.join(liste_tampon)
-        adapter['realisator'] = realisator_cleaned
+        # realisator_cleaned = ', '.join(liste_tampon)
+        adapter['realisator'] = liste_tampon
         return item
     
     # def clean_genre(self, item):
@@ -225,6 +225,7 @@ class DatabasePipeline:
         # Créer une instance de Movie
         session = self.Session()
         self.load_movie_table(item, session, spider)
+        self.load_serie_table(item,session, spider)
         return item
 
     def load_movie_table(self, item, session, spider):
@@ -258,7 +259,7 @@ class DatabasePipeline:
                 nouvelle_ligne = CountryByMovie(country_name=country, movie_id=movie.movie_id)
                 session.add(nouvelle_ligne)
                 session.flush()
-                
+
         # (relation MANY TO MANY)
         # Ajout des données vers la table People (acteurs) + vers la table d'association ActorsByMovie
         for actor in item.get('actors', []):
@@ -275,10 +276,32 @@ class DatabasePipeline:
             # Je récupère l'ID du film pour l'ajouter à ma table d'association
             var_movie_id = movie.movie_id
 
-            association_actors_by_movie = ActorsByMovie(people_id=actor_id, movie_id=var_movie_id)
-            session.add(association_actors_by_movie)
-            session.flush()
-       
+            #Je vérifie si il n'y a pas de doublons: 
+            association_actors_by_movie = session.query(ActorsByMovie).filter_by(people_id=actor_id, movie_id=var_movie_id).first()
+            if association_actors_by_movie is None:
+                association_actors_by_movie = ActorsByMovie(people_id=actor_id, movie_id=var_movie_id)
+                session.add(association_actors_by_movie)
+                session.flush()
+            
+        #Ajout des données vers la table People (realisator) + vers la table d'association RealisatorByMovie
+        for realisator in item.get('realisator', []):
+            if_exist = session.query(People).filter_by(people_name=realisator).first()
+            if if_exist is None:
+                une_ligne_de_ma_table_people = People(people_name=realisator)
+                session.add(une_ligne_de_ma_table_people)
+                session.flush()
+
+                realisator_id = une_ligne_de_ma_table_people.people_id
+            else:
+                realisator_id = if_exist.people_id
+            var_movie_id = movie.movie_id
+
+            association_realisator_by_movie = session.query(RealisatorByMovie).filter_by(people_id=realisator_id, movie_id=var_movie_id).first()
+            if association_realisator_by_movie is None:
+                association_realisator_by_movie = RealisatorByMovie(people_id=realisator_id, movie_id=var_movie_id)
+                session.add(association_realisator_by_movie)
+                session.flush()
+           
         try:
             session.commit()
         except:
@@ -289,3 +312,5 @@ class DatabasePipeline:
 
         return item
     
+    def load_serie_table(self, item, session, spider):
+        pass
