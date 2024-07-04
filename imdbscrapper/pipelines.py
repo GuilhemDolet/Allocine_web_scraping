@@ -225,10 +225,11 @@ class DatabasePipeline:
         # Créer une instance de Movie
         session = self.Session()
         self.load_movie_table(item, session, spider)
-        self.load_serie_table(item,session, spider)
+        # self.load_serie_table(item,session, spider)
         return item
 
     def load_movie_table(self, item, session, spider):
+
         # Check pour éviter les doublons:
         movie = session.query(Movie).filter_by(title = item.get('title')).first()
         if movie is None:
@@ -245,24 +246,48 @@ class DatabasePipeline:
             session.flush() #Flush pour pouvoir récupérer le movie_id 
 
         # Ajout des données vers la table Genre_by_movies (relation ONE TO MANY)
-        for genre in item.get('genre', []):
-            genre_by_movie_id = session.query(GenreByMovie).filter_by(name_genre=genre, movie_id=movie.movie_id).first()
-            if genre_by_movie_id is None:
-                nouvelle_ligne = GenreByMovie(name_genre=genre, movie_id=movie.movie_id)
-                session.add(nouvelle_ligne)
-                session.flush() 
-        
+        self.one_to_many_relation(item, session, 'genre', GenreByMovie, movie, 'name_genre')
+     
         # Ajout des données vers la table Country_by_movies (relation ONE TO MANY)
-        for country in item.get('country', []):
-            country_by_movie_id = session.query(CountryByMovie).filter_by(country_name=country, movie_id=movie.movie_id).first()
-            if country_by_movie_id is None:
-                nouvelle_ligne = CountryByMovie(country_name=country, movie_id=movie.movie_id)
-                session.add(nouvelle_ligne)
-                session.flush()
+        self.one_to_many_relation(item, session, 'country', CountryByMovie, movie, 'country_name')
 
         # (relation MANY TO MANY)
         # Ajout des données vers la table People (acteurs) + vers la table d'association ActorsByMovie
-        for actor in item.get('actors', []):
+        self.many_to_many_relation(item, session, 'actors', RealisatorByMovie, movie)
+   
+        #Ajout des données vers la table People (realisator) + vers la table d'association RealisatorByMovie
+        self.many_to_many_relation(item, session, 'realisator', ActorsByMovie, movie)
+     
+        try:
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+        return item
+    
+    def load_serie_table(self, item, session, spider):
+        pass
+
+    def one_to_many_relation(self, item, session, scrapy_item: str, table, movie, nom_de_colonne):
+
+
+        for element in item.get(scrapy_item, []):
+            # Utiliser **kwargs pour construire dynamiquement les filtres et arguments
+            filter_args = {nom_de_colonne: element, 'movie_id': movie.movie_id}
+            nouvelle_ligne_args = {nom_de_colonne: element, 'movie_id': movie.movie_id}
+
+            genre_by_movie_id = session.query(table).filter_by(**filter_args).first()
+            if genre_by_movie_id is None:
+                nouvelle_ligne = table(**nouvelle_ligne_args)
+                session.add(nouvelle_ligne)
+                session.flush()
+
+    def many_to_many_relation(self, item, session, scrapy_item: str, table, movie ):
+
+        for actor in item.get(scrapy_item, []):
             if_exist = session.query(People).filter_by(people_name=actor).first()
             if if_exist is None:
                 une_ligne_de_ma_table_people = People(people_name=actor)
@@ -277,40 +302,8 @@ class DatabasePipeline:
             var_movie_id = movie.movie_id
 
             #Je vérifie si il n'y a pas de doublons: 
-            association_actors_by_movie = session.query(ActorsByMovie).filter_by(people_id=actor_id, movie_id=var_movie_id).first()
+            association_actors_by_movie = session.query(table).filter_by(people_id=actor_id, movie_id=var_movie_id).first()
             if association_actors_by_movie is None:
-                association_actors_by_movie = ActorsByMovie(people_id=actor_id, movie_id=var_movie_id)
+                association_actors_by_movie = table(people_id=actor_id, movie_id=var_movie_id)
                 session.add(association_actors_by_movie)
                 session.flush()
-            
-        #Ajout des données vers la table People (realisator) + vers la table d'association RealisatorByMovie
-        for realisator in item.get('realisator', []):
-            if_exist = session.query(People).filter_by(people_name=realisator).first()
-            if if_exist is None:
-                une_ligne_de_ma_table_people = People(people_name=realisator)
-                session.add(une_ligne_de_ma_table_people)
-                session.flush()
-
-                realisator_id = une_ligne_de_ma_table_people.people_id
-            else:
-                realisator_id = if_exist.people_id
-            var_movie_id = movie.movie_id
-
-            association_realisator_by_movie = session.query(RealisatorByMovie).filter_by(people_id=realisator_id, movie_id=var_movie_id).first()
-            if association_realisator_by_movie is None:
-                association_realisator_by_movie = RealisatorByMovie(people_id=realisator_id, movie_id=var_movie_id)
-                session.add(association_realisator_by_movie)
-                session.flush()
-           
-        try:
-            session.commit()
-        except:
-            session.rollback()
-            raise
-        finally:
-            session.close()
-
-        return item
-    
-    def load_serie_table(self, item, session, spider):
-        pass
