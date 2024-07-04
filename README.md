@@ -4,3 +4,5 @@
 - Création de la BDD (SQLITE3) avec des models SQLAlchemy + Schéma MERMAID
 - Les imports des items scrappy fonctionne sur les tables Movie, GenreByMovie, CountryByMovie
 - Première table d'association fonctionnelle entre Movie et People (ActorsByMovie). L'import dans la base de donnée fonctionne, et la corrélation entre ID movie et ID people fonctionne aussi
+- Ok pour toutes les tables concernées par les items movie
+- Factorisation du pipeline database (load_movie_table).
